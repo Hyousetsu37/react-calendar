@@ -1,9 +1,12 @@
 import { addHours, differenceInSeconds } from 'date-fns';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import Modal from 'react-modal';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
+import { useCalendarStore } from '../../hooks';
+import { useUiStore } from '../../hooks/useUiStore';
 
 const customStyles = {
   content: {
@@ -17,14 +20,17 @@ const customStyles = {
 };
 Modal.setAppElement('#root');
 export const CalendarModal = () => {
-  const [isOpen, setIsOpen] = useState(true);
+  const { isDateModalOpen, closeDateModal } = useUiStore();
+  const { activeEvent, startSavingEvent } = useCalendarStore();
 
-  const [formValues, setFormValues] = useState({
+  const initialState = {
     title: 'something',
     notes: 'something else',
     start: new Date(),
     end: addHours(new Date(), 2),
-  });
+  };
+
+  const [formValues, setFormValues] = useState(initialState);
 
   const [formSubmitted, setFormSubmitted] = useState(false);
 
@@ -32,18 +38,34 @@ export const CalendarModal = () => {
     if (!formSubmitted) return '';
     return formValues.title.length > 0 ? '' : 'is-invalid';
   }, [formSubmitted, formValues.title]);
+
+  useEffect(() => {
+    if (activeEvent !== null) {
+      {
+        setFormValues({ ...activeEvent });
+      }
+    }
+  }, [activeEvent]);
+
   const onChangeFormValues = ({ target }) => {
     setFormValues((fv) => {
       return { ...fv, [target.name]: target.value };
     });
   };
 
-  const onCloseModal = () => {
-    console.log('closing');
-    setIsOpen(false);
+  const onDateChanged = (event, changing) => {
+    setFormValues({
+      ...formValues,
+      [changing]: event,
+    });
   };
 
-  const onSubmit = (event) => {
+  const onCloseModal = () => {
+    console.log('closing');
+    closeDateModal();
+  };
+
+  const onSubmit = async (event) => {
     event.preventDefault();
     setFormSubmitted(true);
     const difference = differenceInSeconds(formValues.end, formValues.start);
@@ -53,11 +75,15 @@ export const CalendarModal = () => {
     }
     if (formValues.title.length === 0) return;
     console.log(formValues);
+
+    await startSavingEvent(formValues);
+    closeDateModal();
+    setFormSubmitted(false);
   };
 
   return (
     <Modal
-      isOpen={isOpen}
+      isOpen={isDateModalOpen}
       style={customStyles}
       onRequestClose={onCloseModal}
       className={'modal'}
@@ -68,28 +94,29 @@ export const CalendarModal = () => {
       <hr />
       <form onSubmit={onSubmit} className="container">
         <div className="form-group mb-2">
-          <label>Start date</label>
-          <input
+          <label>Start date and time</label>
+          <br />
+          <DatePicker
+            selected={formValues.start}
+            onChange={(event) => onDateChanged(event, 'start')}
             className="form-control"
-            placeholder="Fecha inicio"
-            type="datetime-local"
-            name="start"
-            value={formValues.start}
-            onChange={onChangeFormValues}
+            dateFormat="Pp"
+            showTimeSelect
+            locale="en"
           />
         </div>
 
         <div className="form-group mb-2">
           <label>End date</label>
-          <input
-            lang="en"
-            /* min={formValues.start} */
+          <br />
+          <DatePicker
+            minDate={formValues.start}
+            selected={formValues.end}
+            onChange={(event) => onDateChanged(event, 'end')}
             className="form-control"
-            placeholder="Fecha inicio"
-            type="datetime-local"
-            name="end"
-            value={formValues.end}
-            onChange={onChangeFormValues}
+            dateFormat="Pp"
+            showTimeSelect
+            locale="en"
           />
         </div>
 

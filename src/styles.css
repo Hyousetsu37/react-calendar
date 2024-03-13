@@ -45,3 +45,27 @@ body {
   outline: none;
   padding: 10px;
 }
+
+.fab {
+  border-radius: 100%;
+  bottom: 25px;
+  font-size: 22px;
+  position: fixed;
+  right: 20px;
+  width: 70px;
+  height: 70px;
+}
+
+.fab-danger {
+  border-radius: 100%;
+  bottom: 25px;
+  font-size: 22px;
+  position: fixed;
+  left: 80px;
+  width: 70px;
+  height: 70px;
+}
+
+.close-btn {
+  left: 20px;
+}
